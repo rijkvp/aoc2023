@@ -11,7 +11,7 @@
       with pkgs;
       {
         devShells.default = mkShell {
-          nativeBuildInputs = [ rustc cargo clippy ];
+          nativeBuildInputs = [ rustc cargo clippy just ];
         };
       }
     );

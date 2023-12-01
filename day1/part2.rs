@@ -1,62 +1,60 @@
-use std::io::{BufRead, BufReader};
 use std::io::stdin;
+use std::io::{BufRead, BufReader};
 
 const DIGITS: &[(&str, u32)] = &[
-  ("one", 1),
-  ("two", 2),
-  ("three", 3),
-  ("four", 4),
-  ("five", 5),
-  ("six", 6),
-  ("seven", 7),
-  ("eight", 8),
-  ("nine", 9),
+    ("one", 1),
+    ("two", 2),
+    ("three", 3),
+    ("four", 4),
+    ("five", 5),
+    ("six", 6),
+    ("seven", 7),
+    ("eight", 8),
+    ("nine", 9),
 ];
 
-fn find(line: &str, i: usize) -> Option<u32> {
-    let c = line.chars().nth(i).unwrap();
-    let mut d = None;
-    if c.is_numeric() {
-      d = c.to_digit(10)
-    } else {
-    for (p, n) in DIGITS {
-      if line[i..line.len()].starts_with(p) {
-        d = Some(*n);
-        break;
-      }
-    } 
-  }
-  d
-}
-
-fn find_digit(line: &str, rev: bool) -> Option<u32> {
-  if rev {
-    for i in (0..line.len()).rev() {
-      if let Some(d) = find(line, i) {
-        return Some(d);
-      };
-    }
-  } else {
-    for i in 0..line.len() {
-      if let Some(d) = find(line, i) {
-        return Some(d);
-      };
-    }
-  };
-  None
-}
-
 fn main() {
-    let file = stdin().lock();
     let mut sum = 0u32;
-    for line in BufReader::new(file).lines() {
+    for line in BufReader::new(stdin()).lines() {
         let line = line.unwrap();
-        println!("line: {}", line);
-        let first = find_digit(&line, false).unwrap();
-        let last = find_digit(&line, true).unwrap();
-        println!("{} & {}", first, last);
-        let n = format!("{}{}", first, last).parse::<u32>().unwrap();
-        sum += n;
+        let mut min = None;
+        let mut first_digit = None::<u32>;
+        let mut max = None;
+        let mut last_digit = None::<u32>;
+        for (pattern, digit) in DIGITS {
+            if let Some(pos) = line.find(pattern) {
+                if min.is_none() || Some(pos) < min {
+                    min = Some(pos);
+                    first_digit = Some(*digit);
+                }
+            }
+            if let Some(pos) = line.rfind(pattern) {
+                if max.is_none() || Some(pos) > max {
+                    max = Some(pos);
+                    last_digit = Some(*digit);
+                }
+            }
+        }
+        for (pos, ch) in line.chars().enumerate() {
+            if ch.is_numeric() {
+                if max.is_none() || Some(pos) > max {
+                    max = Some(pos);
+                    last_digit = ch.to_digit(10);
+                }
+                if min.is_none() || Some(pos) < min {
+                    min = Some(pos);
+                    first_digit = ch.to_digit(10);
+                }
+            }
+        }
+        if let (Some(first), Some(last)) = (first_digit, last_digit) {
+            let num = (first.to_string() + &last.to_string())
+                .parse::<u32>()
+                .unwrap();
+            sum += num;
+        } else {
+            eprintln!("Error: no digits found on line: {}", line);
+        }
     }
-    println!("Sum: {}", sum);
+    println!("{}", sum);
 }
