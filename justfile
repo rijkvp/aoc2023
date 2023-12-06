@@ -1,5 +1,6 @@
 alias c := comp
 alias r := run
+alias e := test-example
 alias t := test
 
 tmpdir := `mktemp -d`
@@ -13,6 +14,11 @@ comp file:
 [no-cd]
 run file: (comp file)
     {{tmpdir}}/{{file_name(file)}}
+
+# test a rust file with input
+[no-cd]
+test-example file: (comp file)
+    {{tmpdir}}/{{file_name(file)}} < example
 
 # test a rust file with input
 [no-cd]
