@@ -1,28 +1,13 @@
 use std::{
-    fmt::{Display, Formatter},
     io::{stdin, BufRead, BufReader},
     str::FromStr,
 };
 
 #[derive(Debug, Clone)]
 struct MapRange {
-    start: u64,
-    end: u64,
+    start: i64,
+    end: i64,
     shift: i64,
-}
-
-impl Display for MapRange {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}-{} ({}{})",
-            self.start,
-            self.end,
-            if self.shift < 0 { '-' } else { '+' },
-            self.shift.abs(),
-        )?;
-        Ok(())
-    }
 }
 
 impl FromStr for MapRange {
@@ -31,11 +16,11 @@ impl FromStr for MapRange {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let numbers = s
             .split_whitespace()
-            .map(|s| s.parse::<u64>().unwrap())
-            .collect::<Vec<u64>>();
+            .map(|s| s.parse::<i64>().unwrap())
+            .collect::<Vec<i64>>();
         Ok(Self {
             start: numbers[1],
-            end: numbers[1] + numbers[2],
+            end: numbers[1] + numbers[2] - 1,
             shift: numbers[0] as i64 - numbers[1] as i64,
         })
     }
@@ -49,11 +34,11 @@ fn main() {
         .unwrap()
         .1
         .split_whitespace()
-        .map(|s| s.parse::<u64>().unwrap())
-        .collect::<Vec<u64>>()
+        .map(|s| s.parse::<i64>().unwrap())
+        .collect::<Vec<i64>>()
         .chunks(2)
-        .map(|c| (c[0], c[0] + c[1]))
-        .collect::<Vec<(u64, u64)>>();
+        .map(|c| (c[0], c[0] + c[1] - 1))
+        .collect::<Vec<(i64, i64)>>();
     reader.next();
     let mut almanac = Vec::new();
     let mut current_map = Vec::new();
@@ -74,80 +59,53 @@ fn main() {
     if !current_map.is_empty() {
         almanac.push(current_map);
     }
-    let mapping = almanac[0].clone();
-    let mut next_mapping = Vec::new();
-    println!("0: {:?}", almanac[0]);
-    println!("1: {:?}", almanac[1]);
-    // the existing one
-    for first_range in &mapping {
-        let mut ranges_left = almanac[1].clone();
-        // for map in &almanac {
-        while !ranges_left.is_empty() {
-            let second_range = ranges_left.pop().unwrap();
-            // the new one
-            let c_start = first_range.start.clamp(second_range.start, second_range.end);
-            let c_end = first_range.end.clamp(second_range.start, second_range.end);
-            println!("Compare {first_range} and {second_range}");
-            if c_end - c_start > 0 {
-                println!("  overlap: {c_start} - {c_end}");
-                // if c == a: just add the shifts together
-                if c_start == second_range.start && c_end == second_range.end {
-                    println!("  add together (no split)");
-                    next_mapping.push(MapRange {
-                        start: second_range.start,
-                        end: second_range.end,
-                        shift: second_range.shift + first_range.shift,
-                    });
+    let mut seeds = seeds;
+    let mut next_seeds: Vec<(i64, i64)> = Vec::new();
+    for map in &almanac {
+        next_seeds.clear();
+        while let Some((start, end)) = seeds.pop() {
+            let mut mapped = false;
+            for range in map {
+                // Simple case: the location lies entirely inside the range
+                if start >= range.start && end <= range.end {
+                    next_seeds.push((
+                        // The entire location is shifted without splitting
+                        start + range.shift,
+                        end + range.shift,
+                    ));
+                    mapped = true;
+                    break;
                 } else {
-                    // 1. The part that gets shifted
-                    // c
-                    println!(
-                        "  add shifted: {} - {} ({})",
-                        c_start,
-                        c_end,
-                        second_range.shift + first_range.shift
-                    );
-                    next_mapping.push(MapRange {
-                        start: c_start,
-                        end: c_end,
-                        shift: second_range.shift + first_range.shift,
-                    });
-                    // left of c
-                    if c_start > second_range.start {
-                        println!(
-                            "  add left split: {} - {} ({})",
-                            second_range.start, c_start, second_range.shift
-                        );
-                        ranges_left.push(MapRange {
-                            start: second_range.start,
-                            end: c_start,
-                            shift: second_range.shift,
-                        });
-                    }
-                    // right of c
-                    if second_range.end > c_end {
-                        println!(
-                            "  add right split: {} - {} ({})",
-                            c_end, second_range.end, second_range.shift
-                        );
-                        ranges_left.push(MapRange {
-                            start: c_end,
-                            end: second_range.end,
-                            shift: second_range.shift,
-                        });
+                    // The location is not entirely inside the range
+                    let clamped_start = start.clamp(range.start, range.end);
+                    let clamped_end = end.clamp(range.start, range.end);
+                    if clamped_end > clamped_start {
+                        // The location overlaps with the range
+                        next_seeds.push((clamped_start + range.shift, clamped_end + range.shift));
+                        // The remaining parts might still be shifted by another range
+                        // Left split
+                        if start < clamped_start {
+                            seeds.push((start, clamped_start));
+                        }
+                        // Right split
+                        if end > clamped_end {
+                            seeds.push((clamped_end, end));
+                        }
+                        mapped = true;
+                        break;
                     }
                 }
-            } else {
-                println!("  no overlap");
+            }
+            if !mapped {
+                next_seeds.push((start, end));
             }
         }
+        seeds = next_seeds.clone();
     }
-    println!("{next_mapping:?}");
-    // }
-    // for seed in seeds {
-    //     println!("Starting with {seed:?}");
-    //     let mut seed_ranges = vec![(seed)];
-    //     let mut next_ranges: Vec<(u64, u64)> = Vec::new();
-    //     min_location = min_location.min(location);
-    // }
+    let min_location = seeds
+        .into_iter()
+        .min_by_key(|(start, _)| *start)
+        .map(|(start, _)| start)
+        .unwrap();
+    println!("{}", min_location);
 }
