@@ -8,7 +8,7 @@ tmpdir := `mktemp -d`
 # compile a Rust file
 [no-cd]
 comp file:
-    rustc {{file}} -o {{tmpdir}}/{{file_name(file)}}
+    rustc {{file}} -C opt-level=3 -o {{tmpdir}}/{{file_name(file)}}
 
 # run a rust file
 [no-cd]
