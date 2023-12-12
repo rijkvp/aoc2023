@@ -1,6 +1,6 @@
 use std::io::{stdin, BufRead, BufReader};
 
-fn main() {
+pub fn expand(multiplier: isize) -> u64 {
     let mut pairs = Vec::new();
     let mut empty_rows = Vec::new();
     let mut set_cols = Vec::new();
@@ -28,7 +28,7 @@ fn main() {
                 shift += 1;
             }
         }
-        pair.0 += shift;
+        pair.0 += shift * multiplier;
     }
     for pair in pairs.iter_mut() {
         let mut shift = 0;
@@ -39,16 +39,20 @@ fn main() {
                 }
             }
         }
-        pair.1 += shift;
+        pair.1 += shift * multiplier;
     }
     let mut sum = 0;
     for i in 0..pairs.len() {
         for j in i + 1..pairs.len() {
             let (r1, c1) = pairs[i];
             let (r2, c2) = pairs[j];
-            let sp = (r2 - r1).abs() + (c2 - c1).abs();
-            sum += sp;
+            let dist = (r2 - r1).abs() + (c2 - c1).abs();
+            sum += dist;
         }
     }
-    println!("{}", sum);
+    sum as u64
+}
+
+fn main() {
+    println!("{}", expand(1));
 }

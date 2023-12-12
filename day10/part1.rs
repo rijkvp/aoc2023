@@ -7,7 +7,7 @@ fn find_next(
     grid: &Vec<Vec<char>>,
     visited: &mut Vec<Vec<bool>>,
 ) -> u64 {
-    if x < 0 || x as usize > grid.len() || y < 0 || y as usize > grid[0].len() {
+    if x < 0 || x as usize > grid[0].len() || y < 0 || y as usize > grid.len() {
         return 0;
     }
     if visited[y as usize][x as usize] {
@@ -80,7 +80,6 @@ fn find_next(
         'S' => {
             visited[y as usize][x as usize] = true;
             0
-            // unreachable!()
         }
         _ => unreachable!(),
     };

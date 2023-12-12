@@ -10,11 +10,14 @@ fn main() {
         let mut inside = false;
         for x in 0..grid[0].len() {
             if visited[y][x] {
-                inside = !inside;
-                print!(" ");
+                let p = grid[y][x];
+                if p == '|' || p == 'J' || p == 'L' || p == 'S' {
+                    inside = !inside;
+                }
+                print!("V");
             } else if inside {
                 count += 1;
-                print!("X");
+                print!("-");
             } else {
                 print!(" ");
             }
